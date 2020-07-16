@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 public class ThreadPoolConfig {
 
     @Bean
-    @Scope("prototype")
     public  ThreadPoolExecutor getThreadPool(){
         return  new ThreadPoolExecutor(5, 5, 3,
                 TimeUnit. SECONDS, new ArrayBlockingQueue<Runnable>(3),
