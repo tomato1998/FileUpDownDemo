@@ -1,2 +1,7 @@
 server:
   port: 80
+
+oss:
+  endpoint: oss-cn-beijing.aliyuncs.com
+  accesskey: LTAI4GJ5zTLJ6CPZxAwdyBzs
+  accesskeySecret: Rh0K8uEJaZS9gZoJiHsuDLyMPHSN2s

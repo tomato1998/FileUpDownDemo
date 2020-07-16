@@ -1,48 +1,35 @@
-package com.boss.oss.utils;
+package com.boss.oss.service.impl;
 
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.model.PartETag;
 import com.aliyun.oss.model.UploadPartRequest;
 import com.aliyun.oss.model.UploadPartResult;
+import com.boss.oss.service.FileService;
 import lombok.extern.slf4j.Slf4j;
-import sun.security.krb5.internal.PAData;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
+import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 
 /**
  * @author LiDaShan
  * @Version 1.0
  * @Date 2020/7/16
  * @Content:
- *      自定义线程池的上传任务，保留供以后参考
- *      FileUpload使用了SpringBoot整合线程池
  */
 @Slf4j
-public class UploadThread implements Callable<PartETag> {
+@Service
+public class FileServiceImpl implements FileService {
 
-    private File sampleFile;
-    private OSS ossClient;
-    private int tag;
-    private String bucketName;
-    private String objectName;
-    private String uploadId;
 
-    public UploadThread(File sampleFile,OSS ossClient,int tag,String bucketName,String objectName,String uploadId){
-        this.sampleFile=sampleFile;
-        this.ossClient=ossClient;
-        this.tag=tag;
-        this.bucketName=bucketName;
-        this.objectName=objectName;
-        this.uploadId=uploadId;
-    }
 
-    /**
-     * 通过tag，将文件指定分片上传，并返回partETag
-     * @return
-     */
+
     @Override
-    public PartETag call() {
+    @Async("uploadExecutor")
+    public Future<PartETag> upload(CountDownLatch latch, File sampleFile, OSS ossClient, int tag, String bucketName, String objectName, String uploadId) {
 
         /**
          * 1. 计算文件大小，分片大小与标识
@@ -86,6 +73,9 @@ public class UploadThread implements Callable<PartETag> {
          * 3.验证分片上传成功，获取服务器返回的partETag并返回
          */
         log.info("线程"+tag+"的partETag"+partETag);
-        return partETag;
+        //计数器减一
+        latch.countDown();
+        return new AsyncResult<>(partETag);
     }
+
 }

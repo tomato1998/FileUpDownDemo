@@ -4,10 +4,10 @@ package com.boss.oss.config;
 import com.aliyun.oss.OSS;
 
 import com.aliyun.oss.OSSClientBuilder;
-import com.boss.oss.vo.CommonResult;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Scope;
 
 /**
  * @author LiDaShan
@@ -21,15 +21,18 @@ public class OssClientConfig {
     /**
      * OSS对外服务的访问域名
      */
-    private static final String ENDPOINT="oss-cn-beijing.aliyuncs.com";
+    @Value("${oss.endpoint}")
+    private String endpoint;
     /**
      * 访问密钥，标识用户
      */
-    private static final String ACCESSKEY="LTAI4GJ5zTLJ6CPZxAwdyBzs";
+    @Value("${oss.accesskey}")
+    private String accesskey;
     /**
      * 访问密钥，用于加密签名字符串和OSS用来验证签名字符串的密钥
      */
-    private static final String ACCESSKEYSECRET="Rh0K8uEJaZS9gZoJiHsuDLyMPHSN2s";
+    @Value("${oss.accesskeySecret}")
+    private String accessKeySecret;
 
     /**
      * 注入OSSClient实例
@@ -37,6 +40,6 @@ public class OssClientConfig {
      */
     @Bean
     public OSS createOSSClient(){
-        return new OSSClientBuilder().build(ENDPOINT,ACCESSKEY,ACCESSKEYSECRET);
+        return new OSSClientBuilder().build(endpoint,accesskey,accessKeySecret);
     }
 }
