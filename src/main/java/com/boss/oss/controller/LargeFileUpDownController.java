@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -47,7 +48,7 @@ public class LargeFileUpDownController {
     private volatile List<PartETag> partETags =  new ArrayList<PartETag>();
 
     @PostMapping("/{id}")
-    public CommonResult LargeFileUpload(@PathVariable("id") Integer id) throws IOException, InterruptedException {
+    public CommonResult LargeFileUpload(@PathVariable("id") Integer id) throws IOException, InterruptedException, ExecutionException {
         //记录开始上传时间
         long start = System.currentTimeMillis();
         //记录总耗时
@@ -62,38 +63,37 @@ public class LargeFileUpDownController {
         // 返回uploadId，它是分片上传事件的唯一标识，您可以根据这个uploadId发起相关的操作，如取消分片上传、查询分片上传等。
         String uploadId = upresult.getUploadId();
 
-
-
-
         //线程池共5个线程，分成5片
-        final File sampleFile = new File("C:\\Users\\49072\\Desktop\\test1.png");
+        final File sampleFile = new File("C:\\Users\\49072\\Desktop\\SpringCloud.mmap");
         List<Callable<PartETag>> tasks = new ArrayList();
         // 遍历分片上传。
         for (int i = 0; i < 5; i++) {
             Callable<PartETag> task = new UploadThread(sampleFile, ossClient, i, bucketName, objectName, uploadId);
-            threadPool.submit(task);
+            //threadPool.submit(task);
             tasks.add(task);
         }
+
+
+        List<Future<PartETag>> futures = threadPool.invokeAll(tasks);
+//        List<Future<PartETag>> futures = threadPool.invokeAll(tasks);
+        for (Future<PartETag> future : futures) {
+            partETags.add(future.get());
+        }
+        log.info("成功上传,partETags为:");
         threadPool.shutdown();
         //判断是否所有线程已经执行完毕
         while (true){
             if (threadPool.isTerminated()) {
                 //记录结束时间
                 long end = System.currentTimeMillis();
-                log.error("文件上传结束时间：" + new Date());
+                log.info("文件上传结束时间：" + new Date());
                 long date=(end-start)/1000;
                 if(date<60){
                     time="耗时"+((end-start)/1000)+"s";
-                    log.error(time);
                 }else{
                     long MM=date/60;
                     long ss=date%60;
                     time = "耗时"+(MM+"M:"+ss+"s");
-                    log.error(time);
-                }
-                List<Future<PartETag>> futures = threadPool.invokeAll(tasks);
-                for (Future<PartETag> future : futures) {
-                    partETags.add((PartETag) future);
                 }
                 // 创建CompleteMultipartUploadRequest对象。
                 // 在执行完成分片上传操作时，需要提供所有有效的partETags。OSS收到提交的partETags后，会逐一验证每个分片的有效性。
@@ -101,7 +101,8 @@ public class LargeFileUpDownController {
                 CompleteMultipartUploadRequest completeMultipartUploadRequest =
                         new CompleteMultipartUploadRequest(bucketName, objectName, uploadId, partETags);
                 // 完成上传。
-                CompleteMultipartUploadResult completeMultipartUploadResult = ossClient.completeMultipartUpload(completeMultipartUploadRequest);
+                CompleteMultipartUploadResult completeMultipartUploadResult =
+                        ossClient.completeMultipartUpload(completeMultipartUploadRequest);
                 // 关闭OSSClient。
                 ossClient.shutdown();
                 break;

@@ -5,6 +5,7 @@ import com.aliyun.oss.model.PartETag;
 import com.aliyun.oss.model.UploadPartRequest;
 import com.aliyun.oss.model.UploadPartResult;
 import lombok.extern.slf4j.Slf4j;
+import sun.security.krb5.internal.PAData;
 
 import java.io.*;
 import java.util.concurrent.Callable;
@@ -66,6 +67,8 @@ public class UploadThread implements Callable<PartETag> {
         // 每个分片不需要按顺序上传，甚至可以在不同客户端上传，OSS会按照分片号排序组成完整的文件。
         UploadPartResult uploadPartResult = ossClient.uploadPart(uploadPartRequest);
         // 每次上传分片之后，OSS的返回结果包含PartETag。PartETag将被保存在partETags中。
-        return uploadPartResult.getPartETag();
+        PartETag partETag = uploadPartResult.getPartETag();
+        log.info("线程"+tag+"的partETag"+partETag);
+        return partETag;
     }
 }

@@ -22,7 +22,7 @@ public class ThreadPoolConfig {
     @Bean
     @Scope("prototype")
     public  ThreadPoolExecutor getThreadPool(){
-        return  new ThreadPoolExecutor(2, 5, 3,
+        return  new ThreadPoolExecutor(5, 5, 3,
                 TimeUnit. SECONDS, new ArrayBlockingQueue<Runnable>(3),
                 new ThreadPoolExecutor.DiscardOldestPolicy());
     }
