@@ -1,6 +1,7 @@
 package com.boss.oss.controller;
 
 import com.aliyun.oss.OSS;
+import com.aliyun.oss.OSSClientBuilder;
 import com.aliyun.oss.model.*;
 import com.boss.oss.utils.SnowFlake;
 import com.boss.oss.utils.UploadThread;
@@ -50,7 +51,7 @@ public class LargeFileUpDownController {
 
 
     @PostMapping("/{id}")
-    public CommonResult LargeFileUpload(@PathVariable("id") Integer id) throws IOException, InterruptedException, ExecutionException {
+    public CommonResult Upload(@PathVariable("id") Integer id) throws IOException, InterruptedException, ExecutionException {
 
         /**
          * 记录开始时间与文件上传总耗时
@@ -126,8 +127,44 @@ public class LargeFileUpDownController {
         CompleteMultipartUploadResult completeMultipartUploadResult =
                         ossClient.completeMultipartUpload(completeMultipartUploadRequest);
         //ossClient.shutdown();
-        return new CommonResult(666,"上传成功",totalTime);
+        return new CommonResult(666,"上传成功",totalTime+"      文件名:"+objectName);
     }
 
+
+    @GetMapping("/{objectName}")
+    public CommonResult download(@PathVariable("objectName") String objectName) throws Throwable {
+
+        long start = System.currentTimeMillis();
+        String totalTime = "";
+        log.info("开始下载文件"+objectName);
+
+        // 下载请求，10个任务并发下载，启动断点续传。
+        DownloadFileRequest downloadFileRequest = new DownloadFileRequest(bucketName, objectName);
+        downloadFileRequest.setDownloadFile("C:\\Users\\49072\\Desktop\\download\\"+objectName);
+        downloadFileRequest.setPartSize(1 * 1024 * 1024);
+        downloadFileRequest.setTaskNum(10);
+        downloadFileRequest.setEnableCheckpoint(true);
+        downloadFileRequest.setCheckpointFile("C:\\Users\\49072\\Desktop\\download\\"+objectName);
+
+        // 下载文件。
+        DownloadFileResult downloadRes = ossClient.downloadFile(downloadFileRequest);
+        // 下载成功时，会返回文件元信息。
+        ObjectMetadata objectMetadata = downloadRes.getObjectMetadata();
+
+        long end = System.currentTimeMillis();
+        log.info("文件下载结束时间：" + new Date());
+        long useTime=(end-start)/1000;
+        if(useTime<60){
+            totalTime="耗时"+(useTime)+"s";
+        }else{
+            long MM=useTime/60;
+            long ss=useTime%60;
+            totalTime = "耗时"+(MM+"M:"+ss+"s");
+        }
+        // 关闭OSSClient。
+        ossClient.shutdown();
+        log.info("=================下载完成====================");
+        return new CommonResult(666,"文件下载成功",objectName+"下载结束，文件元信息"+objectMetadata+"  "+totalTime);
+    }
 
 }
