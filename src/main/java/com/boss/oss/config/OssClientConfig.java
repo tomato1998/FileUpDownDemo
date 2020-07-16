@@ -36,6 +36,7 @@ public class OssClientConfig {
      * @return
      */
     @Bean
+    @Scope("prototype")
     public OSS createOSSClient(){
         return new OSSClientBuilder().build(ENDPOINT,ACCESSKEY,ACCESSKEYSECRET);
     }

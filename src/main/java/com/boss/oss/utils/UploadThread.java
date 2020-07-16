@@ -14,7 +14,7 @@ import java.util.concurrent.Callable;
  * @author LiDaShan
  * @Version 1.0
  * @Date 2020/7/16
- * @Content:
+ * @Content:    分片文件上传线程
  */
 @Slf4j
 public class UploadThread implements Callable<PartETag> {
@@ -35,16 +35,28 @@ public class UploadThread implements Callable<PartETag> {
         this.uploadId=uploadId;
     }
 
+    /**
+     * 通过tag，将文件指定分片上传，并返回partETag
+     * @return
+     */
     @Override
     public PartETag call() {
 
-        log.info("====================================");
+        /**
+         * 1. 计算文件大小，分片大小与标识
+         */
         log.info("=========线程"+tag+"已将开始上传==========");
         log.info("=========上传的分片id为"+tag+"==========");
-        Long fileLength = sampleFile.length() / 5;
+        Long fileLength = sampleFile.length() ;
+        log.info("=========上传总文件大小为"+fileLength+"==========");
         Long partSize = fileLength / 5;
         long startPos = tag * partSize;
         long curPartSize = (tag + 1 == 5) ? (fileLength - startPos) : partSize;
+        log.info("===========线程"+tag+"上传的分片"+tag+"的大小为"+curPartSize+"=================");
+
+        /**
+         * 2. 阿里OSS的分片上传代码
+         */
         InputStream instream = null;
         try {
             instream = new FileInputStream(sampleFile);
@@ -68,6 +80,9 @@ public class UploadThread implements Callable<PartETag> {
         UploadPartResult uploadPartResult = ossClient.uploadPart(uploadPartRequest);
         // 每次上传分片之后，OSS的返回结果包含PartETag。PartETag将被保存在partETags中。
         PartETag partETag = uploadPartResult.getPartETag();
+        /**
+         * 3.验证分片上传成功，获取服务器返回的partETag并返回
+         */
         log.info("线程"+tag+"的partETag"+partETag);
         return partETag;
     }
